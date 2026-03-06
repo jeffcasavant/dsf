@@ -45,9 +45,7 @@ class TaskDb:
     def _generate_petname(self) -> str:
         for _ in range(100):
             name: str = petname_lib.generate(words=2, separator="-")
-            row = self.conn.execute(
-                "SELECT 1 FROM tasks WHERE petname = ?", (name,)
-            ).fetchone()
+            row = self.conn.execute("SELECT 1 FROM tasks WHERE petname = ?", (name,)).fetchone()
             if row is None:
                 return name
         raise RuntimeError("Failed to generate unique petname after 100 attempts")
@@ -62,15 +60,11 @@ class TaskDb:
         return pn
 
     def get_task(self, petname: str) -> dict[str, Any] | None:
-        row = self.conn.execute(
-            "SELECT * FROM tasks WHERE petname = ?", (petname,)
-        ).fetchone()
+        row = self.conn.execute("SELECT * FROM tasks WHERE petname = ?", (petname,)).fetchone()
         return dict(row) if row else None
 
     def list_tasks(self) -> list[dict[str, Any]]:
-        rows = self.conn.execute(
-            "SELECT * FROM tasks ORDER BY created_at DESC"
-        ).fetchall()
+        rows = self.conn.execute("SELECT * FROM tasks ORDER BY created_at DESC").fetchall()
         return [dict(r) for r in rows]
 
     def claim_next(self) -> dict[str, Any] | None:
@@ -83,9 +77,7 @@ class TaskDb:
         self.conn.commit()
         return dict(row) if row else None
 
-    def update_status(
-        self, petname: str, status: TaskStatus, error: str | None = None
-    ) -> None:
+    def update_status(self, petname: str, status: TaskStatus, error: str | None = None) -> None:
         if status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
             self.conn.execute(
                 "UPDATE tasks SET status = ?, error = ?, completed_at = datetime('now') "

@@ -33,8 +33,7 @@ def process_task(
         # Init git repo and set remote
         container.exec_shell(f"mkdir -p {workspace} && cd {workspace} && git init")
         container.exec_shell(
-            f"cd {workspace} && git remote add origin"
-            f" https://github.com/{task['github_repo']}.git"
+            f"cd {workspace} && git remote add origin https://github.com/{task['github_repo']}.git"
         )
 
         # Run Claude Code
@@ -60,9 +59,7 @@ def process_task(
         push_result = container.exec_shell(f"cd {workspace} && git push -u origin HEAD")
 
         if push_result.returncode != 0:
-            db.update_status(
-                petname, TaskStatus.FAILED, error=f"Push failed: {push_result.stderr}"
-            )
+            db.update_status(petname, TaskStatus.FAILED, error=f"Push failed: {push_result.stderr}")
             logger.error("Task %s push failed: %s", petname, push_result.stderr)
             return
 
