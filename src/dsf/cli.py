@@ -9,7 +9,9 @@ def main() -> None:
 @main.command()
 def init() -> None:
     """Bootstrap the DSF container and configuration."""
-    click.echo("dsf init: not yet implemented")
+    from dsf.init_cmd import run_init
+
+    run_init()
 
 
 @main.command()
