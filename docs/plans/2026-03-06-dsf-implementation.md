@@ -362,9 +362,7 @@ class TaskDb:
     def _generate_petname(self) -> str:
         for _ in range(100):
             name: str = petname_lib.generate(words=2, separator="-")
-            row = self.conn.execute(
-                "SELECT 1 FROM tasks WHERE petname = ?", (name,)
-            ).fetchone()
+            row = self.conn.execute("SELECT 1 FROM tasks WHERE petname = ?", (name,)).fetchone()
             if row is None:
                 return name
         raise RuntimeError("Failed to generate unique petname after 100 attempts")
@@ -379,15 +377,11 @@ class TaskDb:
         return pn
 
     def get_task(self, petname: str) -> dict[str, Any] | None:
-        row = self.conn.execute(
-            "SELECT * FROM tasks WHERE petname = ?", (petname,)
-        ).fetchone()
+        row = self.conn.execute("SELECT * FROM tasks WHERE petname = ?", (petname,)).fetchone()
         return dict(row) if row else None
 
     def list_tasks(self) -> list[dict[str, Any]]:
-        rows = self.conn.execute(
-            "SELECT * FROM tasks ORDER BY created_at DESC"
-        ).fetchall()
+        rows = self.conn.execute("SELECT * FROM tasks ORDER BY created_at DESC").fetchall()
         return [dict(r) for r in rows]
 
     def claim_next(self) -> dict[str, Any] | None:
@@ -399,9 +393,7 @@ class TaskDb:
         self.conn.commit()
         return dict(row) if row else None
 
-    def update_status(
-        self, petname: str, status: TaskStatus, error: str | None = None
-    ) -> None:
+    def update_status(self, petname: str, status: TaskStatus, error: str | None = None) -> None:
         if status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
             self.conn.execute(
                 "UPDATE tasks SET status = ?, error = ?, completed_at = datetime('now') WHERE petname = ?",
@@ -516,8 +508,12 @@ class ContainerManager:
         subprocess.run(
             [
                 "systemd-nspawn",
-                "-D", str(self.image_path),
-                "npm", "install", "-g", "@anthropic-ai/claude-code",
+                "-D",
+                str(self.image_path),
+                "npm",
+                "install",
+                "-g",
+                "@anthropic-ai/claude-code",
             ],
             check=True,
         )
@@ -525,8 +521,13 @@ class ContainerManager:
         subprocess.run(
             [
                 "systemd-nspawn",
-                "-D", str(self.image_path),
-                "useradd", "-m", "-s", "/bin/bash", "worker",
+                "-D",
+                str(self.image_path),
+                "useradd",
+                "-m",
+                "-s",
+                "/bin/bash",
+                "worker",
             ],
             check=True,
         )
@@ -538,8 +539,10 @@ class ContainerManager:
             [
                 "systemd-nspawn",
                 "--boot",
-                "--machine", self.container_name,
-                "-D", str(self.image_path),
+                "--machine",
+                self.container_name,
+                "-D",
+                str(self.image_path),
                 f"--bind-ro={claude_dir}:/home/worker/.claude",
                 f"--bind={workspace_dir}:/workspace",
             ],
@@ -571,11 +574,13 @@ class ContainerManager:
     ) -> subprocess.CompletedProcess[str]:
         """Run Claude Code inside the container for a task."""
         cmd = [
-            "machinectl", "shell",
+            "machinectl",
+            "shell",
             f"--setenv=GH_TOKEN={gh_token}",
             f"--setenv=HOME=/home/worker",
             f"worker@{self.container_name}",
-            "/usr/bin/bash", "-c",
+            "/usr/bin/bash",
+            "-c",
             f"cd {workspace} && claude --dangerously-skip-permissions -p {_shell_quote(prompt)}",
         ]
         with open(log_path, "w") as log_file:
@@ -591,9 +596,12 @@ class ContainerManager:
         """Run an arbitrary command in the container as worker."""
         return subprocess.run(
             [
-                "machinectl", "shell",
+                "machinectl",
+                "shell",
                 f"worker@{self.container_name}",
-                "/usr/bin/bash", "-c", command,
+                "/usr/bin/bash",
+                "-c",
+                command,
             ],
             capture_output=True,
             text=True,
@@ -772,9 +780,7 @@ def test_submit_with_file(tmp_path: Path) -> None:
     with patch("dsf.cli.TaskDb") as mock_db_cls:
         mock_db = mock_db_cls.return_value
         mock_db.create_task.return_value = "calm-badger"
-        result = runner.invoke(
-            main, ["submit", "--repo", "jeff/my-app", "--file", str(spec_file)]
-        )
+        result = runner.invoke(main, ["submit", "--repo", "jeff/my-app", "--file", str(spec_file)])
     assert result.exit_code == 0
     assert "calm-badger" in result.output
 ```
@@ -1019,16 +1025,18 @@ def process_task(
         )
 
         if result.returncode != 0:
-            db.update_status(petname, TaskStatus.FAILED, error=f"Claude exited with code {result.returncode}")
+            db.update_status(
+                petname, TaskStatus.FAILED, error=f"Claude exited with code {result.returncode}"
+            )
             logger.error("Task %s failed: Claude exit code %d", petname, result.returncode)
             return
 
         # Push to GitHub
         db.update_status(petname, TaskStatus.PUSHING)
-        container.exec_shell(f"cd {workspace} && git add -A && git commit -m 'DSF: {name}' --allow-empty")
-        push_result = container.exec_shell(
-            f"cd {workspace} && git push -u origin HEAD"
+        container.exec_shell(
+            f"cd {workspace} && git add -A && git commit -m 'DSF: {name}' --allow-empty"
         )
+        push_result = container.exec_shell(f"cd {workspace} && git push -u origin HEAD")
 
         if push_result.returncode != 0:
             db.update_status(petname, TaskStatus.FAILED, error=f"Push failed: {push_result.stderr}")
@@ -1120,6 +1128,7 @@ def test_full_submit_status_flow(tmp_path: Path) -> None:
     db_path = tmp_path / "tasks.db"
     with patch("dsf.cli.TaskDb") as mock_cls:
         from dsf.db import TaskDb
+
         real_db = TaskDb(db_path)
         mock_cls.return_value = real_db
 
